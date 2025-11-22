@@ -3,6 +3,8 @@ import Header from './components/Header'
 import ContextManager from './components/ContextManager'
 import NotesManager from './components/NotesManager'
 import LearningModes from './components/LearningModes'
+import SettingsPanel from './components/SettingsPanel'
+import MapOverview from './components/MapOverview'
 
 const strings = {
   en: {
@@ -22,12 +24,27 @@ const strings = {
     addNote: 'Add note',
     noNotes: 'No notes found for this context',
     learningModes: 'Learning Modes',
+    // 10 modes
     modeFlashcards: 'Flashcards',
     modeFlashcardsDesc: 'Practice active recall with Q&A cards',
     modeQuiz: 'Quiz',
     modeQuizDesc: 'Multiple-choice quizzes from your notes',
     modeRandom: 'Random',
-    modeRandomDesc: 'Shuffle notes for varied practice'
+    modeRandomDesc: 'Shuffle notes for varied practice',
+    modeTyping: 'Typing',
+    modeTypingDesc: 'Type the answer to reinforce recall',
+    modeCloze: 'Cloze',
+    modeClozeDesc: 'Fill in the blanks within your notes',
+    modeMatching: 'Matching',
+    modeMatchingDesc: 'Match questions with the right answers',
+    modeTrueFalse: 'True / False',
+    modeTrueFalseDesc: 'Quick checks with true/false prompts',
+    modeSpaced: 'Spaced Repetition',
+    modeSpacedDesc: 'Schedule reviews for long-term memory',
+    modeExam: 'Exam',
+    modeExamDesc: 'Timed mixed-mode test',
+    modeRevision: 'Revision',
+    modeRevisionDesc: 'Guided review through all notes'
   },
   de: {
     tagline: 'Notizen nach Themen ordnen und auf viele Arten lernen',
@@ -51,7 +68,21 @@ const strings = {
     modeQuiz: 'Quiz',
     modeQuizDesc: 'Multiple-Choice-Quiz aus deinen Notizen',
     modeRandom: 'Zufällig',
-    modeRandomDesc: 'Mische Notizen für Abwechslung'
+    modeRandomDesc: 'Mische Notizen für Abwechslung',
+    modeTyping: 'Tippen',
+    modeTypingDesc: 'Antwort eintippen zur Festigung',
+    modeCloze: 'Lückentext',
+    modeClozeDesc: 'Fülle die Lücken in deinen Notizen',
+    modeMatching: 'Zuordnen',
+    modeMatchingDesc: 'Fragen den richtigen Antworten zuordnen',
+    modeTrueFalse: 'Richtig / Falsch',
+    modeTrueFalseDesc: 'Schnelle Checks mit R/F-Fragen',
+    modeSpaced: 'Spaced Repetition',
+    modeSpacedDesc: 'Wiederholungen zeitlich planen',
+    modeExam: 'Prüfung',
+    modeExamDesc: 'Zeitbegrenzter Mix-Test',
+    modeRevision: 'Wiederholung',
+    modeRevisionDesc: 'Geführte Übersicht über alle Notizen'
   },
   es: {
     tagline: 'Organiza notas por tema y aprende de varias maneras',
@@ -75,7 +106,21 @@ const strings = {
     modeQuiz: 'Cuestionario',
     modeQuizDesc: 'Preguntas de opción múltiple de tus notas',
     modeRandom: 'Aleatorio',
-    modeRandomDesc: 'Baraja notas para variedad'
+    modeRandomDesc: 'Baraja notas para variedad',
+    modeTyping: 'Escritura',
+    modeTypingDesc: 'Escribe la respuesta para reforzar',
+    modeCloze: 'Huecos',
+    modeClozeDesc: 'Rellena los huecos en tus notas',
+    modeMatching: 'Emparejar',
+    modeMatchingDesc: 'Empareja preguntas con respuestas',
+    modeTrueFalse: 'Verdadero / Falso',
+    modeTrueFalseDesc: 'Comprobaciones rápidas V/F',
+    modeSpaced: 'Repetición espaciada',
+    modeSpacedDesc: 'Programa repasos a tiempo',
+    modeExam: 'Examen',
+    modeExamDesc: 'Prueba cronometrada mixta',
+    modeRevision: 'Repaso',
+    modeRevisionDesc: 'Revisión guiada de todas las notas'
   },
   fr: {
     tagline: 'Organisez vos notes par sujet et apprenez de plusieurs façons',
@@ -99,7 +144,21 @@ const strings = {
     modeQuiz: 'Quiz',
     modeQuizDesc: 'QCM à partir de vos notes',
     modeRandom: 'Aléatoire',
-    modeRandomDesc: 'Mélangez les notes pour varier'
+    modeRandomDesc: 'Mélangez les notes pour varier',
+    modeTyping: 'Saisie',
+    modeTypingDesc: 'Saisissez la réponse pour l’ancrer',
+    modeCloze: 'Texte à trous',
+    modeClozeDesc: 'Complétez les mots manquants',
+    modeMatching: 'Association',
+    modeMatchingDesc: 'Associez questions et réponses',
+    modeTrueFalse: 'Vrai / Faux',
+    modeTrueFalseDesc: 'Vérifications rapides V/F',
+    modeSpaced: 'Répétition espacée',
+    modeSpacedDesc: 'Planifiez des révisions',
+    modeExam: 'Examen',
+    modeExamDesc: 'Test chronométré mixte',
+    modeRevision: 'Révision',
+    modeRevisionDesc: 'Revue guidée de toutes les notes'
   }
 }
 
@@ -114,6 +173,14 @@ function App() {
   const { lang, setLang, t } = useI18n()
   const [languages, setLanguages] = useState([])
   const [selectedContext, setSelectedContext] = useState(null)
+  const [contexts, setContexts] = useState([])
+  const [notes, setNotes] = useState([])
+  const [ui, setUi] = useState({ compact: false, bgStyle: 'gradient' })
+
+  useEffect(() => {
+    const saved = JSON.parse(localStorage.getItem('uiSettings') || '{}')
+    setUi({ compact: !!saved.compact, bgStyle: saved.bgStyle || 'gradient' })
+  }, [])
 
   useEffect(() => {
     const loadLangs = async () => {
@@ -138,28 +205,48 @@ function App() {
     setLang(l)
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(59,130,246,0.15),transparent_60%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(99,102,241,0.12),transparent_60%)]" />
+  const bg = ui.bgStyle === 'mesh'
+    ? (
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
+        <div className="absolute inset-0 opacity-30" style={{
+          backgroundImage: 'radial-gradient(20rem 20rem at 20% 10%, rgba(59,130,246,.35), transparent), radial-gradient(18rem 18rem at 80% 30%, rgba(16,185,129,.25), transparent), radial-gradient(14rem 14rem at 60% 80%, rgba(244,63,94,.25), transparent)'
+        }} />
+      </div>
+    ) : (
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(59,130,246,0.15),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(99,102,241,0.12),transparent_60%)]" />
+      </div>
+    )
 
-      <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+  return (
+    <div className="min-h-screen relative">
+      {bg}
+      <div className={`relative max-w-6xl mx-auto px-4 sm:px-6 ${ui.compact ? 'py-5 space-y-4' : 'py-8 space-y-6'}`}>
         <Header t={t} currentLang={lang} onChangeLang={onChangeLang} languages={languages} />
 
-        <div className="grid lg:grid-cols-2 gap-6">
+        <SettingsPanel onChange={(s) => setUi(s)} />
+
+        <div className={`grid lg:grid-cols-2 gap-6`}>
           <ContextManager
             t={t}
             apiBase={apiBase}
             currentLang={lang}
             onSelect={setSelectedContext}
+            onList={(items) => setContexts(items)}
           />
           <NotesManager
             t={t}
             apiBase={apiBase}
             currentLang={lang}
             context={selectedContext}
+            onList={(items) => setNotes(items)}
           />
         </div>
+
+        <MapOverview contexts={contexts} notes={notes} currentContext={selectedContext} />
 
         <LearningModes t={t} />
       </div>

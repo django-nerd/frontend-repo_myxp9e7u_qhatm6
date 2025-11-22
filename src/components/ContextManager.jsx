@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { FolderPlus, FolderOpen, Globe2 } from 'lucide-react'
 
-export default function ContextManager({ t, apiBase, currentLang, onSelect }) {
+export default function ContextManager({ t, apiBase, currentLang, onSelect, onList }) {
   const [contexts, setContexts] = useState([])
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
@@ -11,7 +11,9 @@ export default function ContextManager({ t, apiBase, currentLang, onSelect }) {
     try {
       const res = await fetch(`${apiBase}/api/contexts?language=${currentLang}`)
       const data = await res.json()
-      setContexts(data.items || [])
+      const items = data.items || []
+      setContexts(items)
+      onList?.(items)
     } catch (e) {
       console.error(e)
     }

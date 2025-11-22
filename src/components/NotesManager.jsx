@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Plus, Tags, FileText } from 'lucide-react'
 
-export default function NotesManager({ t, apiBase, currentLang, context }) {
+export default function NotesManager({ t, apiBase, currentLang, context, onList }) {
   const [notes, setNotes] = useState([])
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
@@ -15,7 +15,9 @@ export default function NotesManager({ t, apiBase, currentLang, context }) {
       if (currentLang) url.searchParams.set('language', currentLang)
       const res = await fetch(url.toString())
       const data = await res.json()
-      setNotes(data.items || [])
+      const items = data.items || []
+      setNotes(items)
+      onList?.(items)
     } catch (e) {
       console.error(e)
     }
