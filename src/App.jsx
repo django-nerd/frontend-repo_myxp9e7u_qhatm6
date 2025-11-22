@@ -1,70 +1,167 @@
+import { useEffect, useMemo, useState } from 'react'
+import Header from './components/Header'
+import ContextManager from './components/ContextManager'
+import NotesManager from './components/NotesManager'
+import LearningModes from './components/LearningModes'
+
+const strings = {
+  en: {
+    tagline: 'Organize notes by topic and learn in multiple ways',
+    language: 'Language',
+    contexts: 'Contexts',
+    showingFor: 'Showing',
+    contextName: 'Context name',
+    contextDesc: 'Short description',
+    addContext: 'Add context',
+    noContexts: 'No contexts yet — create one to get started',
+    notes: 'Notes',
+    inContext: 'in',
+    noteTitle: 'Title / Question',
+    noteContent: 'Content / Answer',
+    tagsPlaceholder: 'tags, comma, separated',
+    addNote: 'Add note',
+    noNotes: 'No notes found for this context',
+    learningModes: 'Learning Modes',
+    modeFlashcards: 'Flashcards',
+    modeFlashcardsDesc: 'Practice active recall with Q&A cards',
+    modeQuiz: 'Quiz',
+    modeQuizDesc: 'Multiple-choice quizzes from your notes',
+    modeRandom: 'Random',
+    modeRandomDesc: 'Shuffle notes for varied practice'
+  },
+  de: {
+    tagline: 'Notizen nach Themen ordnen und auf viele Arten lernen',
+    language: 'Sprache',
+    contexts: 'Kontexte',
+    showingFor: 'Anzeige für',
+    contextName: 'Kontextname',
+    contextDesc: 'Kurze Beschreibung',
+    addContext: 'Kontext hinzufügen',
+    noContexts: 'Noch keine Kontexte — lege einen an, um zu starten',
+    notes: 'Notizen',
+    inContext: 'in',
+    noteTitle: 'Titel / Frage',
+    noteContent: 'Inhalt / Antwort',
+    tagsPlaceholder: 'tags, komma, getrennt',
+    addNote: 'Notiz hinzufügen',
+    noNotes: 'Keine Notizen für diesen Kontext',
+    learningModes: 'Lernmodi',
+    modeFlashcards: 'Karteikarten',
+    modeFlashcardsDesc: 'Aktives Erinnern mit Frage-Antwort-Karten',
+    modeQuiz: 'Quiz',
+    modeQuizDesc: 'Multiple-Choice-Quiz aus deinen Notizen',
+    modeRandom: 'Zufällig',
+    modeRandomDesc: 'Mische Notizen für Abwechslung'
+  },
+  es: {
+    tagline: 'Organiza notas por tema y aprende de varias maneras',
+    language: 'Idioma',
+    contexts: 'Contextos',
+    showingFor: 'Mostrando',
+    contextName: 'Nombre del contexto',
+    contextDesc: 'Descripción corta',
+    addContext: 'Agregar contexto',
+    noContexts: 'Sin contextos — crea uno para empezar',
+    notes: 'Notas',
+    inContext: 'en',
+    noteTitle: 'Título / Pregunta',
+    noteContent: 'Contenido / Respuesta',
+    tagsPlaceholder: 'etiquetas, separadas, por comas',
+    addNote: 'Agregar nota',
+    noNotes: 'No hay notas para este contexto',
+    learningModes: 'Modos de aprendizaje',
+    modeFlashcards: 'Tarjetas',
+    modeFlashcardsDesc: 'Repasa con tarjetas de preguntas y respuestas',
+    modeQuiz: 'Cuestionario',
+    modeQuizDesc: 'Preguntas de opción múltiple de tus notas',
+    modeRandom: 'Aleatorio',
+    modeRandomDesc: 'Baraja notas para variedad'
+  },
+  fr: {
+    tagline: 'Organisez vos notes par sujet et apprenez de plusieurs façons',
+    language: 'Langue',
+    contexts: 'Contextes',
+    showingFor: 'Affichage',
+    contextName: 'Nom du contexte',
+    contextDesc: 'Brève description',
+    addContext: 'Ajouter un contexte',
+    noContexts: 'Aucun contexte — créez-en un pour commencer',
+    notes: 'Notes',
+    inContext: 'dans',
+    noteTitle: 'Titre / Question',
+    noteContent: 'Contenu / Réponse',
+    tagsPlaceholder: 'étiquettes, séparées, par des virgules',
+    addNote: 'Ajouter une note',
+    noNotes: 'Aucune note pour ce contexte',
+    learningModes: 'Modes d’apprentissage',
+    modeFlashcards: 'Cartes mémoire',
+    modeFlashcardsDesc: 'Répétition active avec des cartes Q-R',
+    modeQuiz: 'Quiz',
+    modeQuizDesc: 'QCM à partir de vos notes',
+    modeRandom: 'Aléatoire',
+    modeRandomDesc: 'Mélangez les notes pour varier'
+  }
+}
+
+function useI18n() {
+  const [lang, setLang] = useState('en')
+  const t = (key) => strings[lang]?.[key] || strings.en[key] || key
+  return { lang, setLang, t }
+}
+
 function App() {
+  const apiBase = import.meta.env.VITE_BACKEND_URL || ''
+  const { lang, setLang, t } = useI18n()
+  const [languages, setLanguages] = useState([])
+  const [selectedContext, setSelectedContext] = useState(null)
+
+  useEffect(() => {
+    const loadLangs = async () => {
+      try {
+        const res = await fetch(`${apiBase}/api/languages`)
+        const data = await res.json()
+        setLanguages(data.languages || [])
+      } catch (e) {
+        setLanguages([
+          { code: 'en', name: 'English' },
+          { code: 'de', name: 'Deutsch' },
+          { code: 'es', name: 'Español' },
+          { code: 'fr', name: 'Français' },
+        ])
+      }
+    }
+    loadLangs()
+  }, [apiBase])
+
+  const onChangeLang = (l) => {
+    setSelectedContext(null)
+    setLang(l)
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Subtle pattern overlay */}
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.05),transparent_50%)]"></div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 relative">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(59,130,246,0.15),transparent_60%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(99,102,241,0.12),transparent_60%)]" />
 
-      <div className="relative min-h-screen flex items-center justify-center p-8">
-        <div className="max-w-2xl w-full">
-          {/* Header with Flames icon */}
-          <div className="text-center mb-12">
-            <div className="inline-flex items-center justify-center mb-6">
-              <img
-                src="/flame-icon.svg"
-                alt="Flames"
-                className="w-24 h-24 drop-shadow-[0_0_25px_rgba(59,130,246,0.5)]"
-              />
-            </div>
+      <div className="relative max-w-6xl mx-auto px-4 sm:px-6 py-8 space-y-6">
+        <Header t={t} currentLang={lang} onChangeLang={onChangeLang} languages={languages} />
 
-            <h1 className="text-5xl font-bold text-white mb-4 tracking-tight">
-              Flames Blue
-            </h1>
-
-            <p className="text-xl text-blue-200 mb-6">
-              Build applications through conversation
-            </p>
-          </div>
-
-          {/* Instructions */}
-          <div className="bg-slate-800/50 backdrop-blur-sm border border-blue-500/20 rounded-2xl p-8 shadow-xl mb-6">
-            <div className="flex items-start gap-4 mb-6">
-              <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold">
-                1
-              </div>
-              <div>
-                <h3 className="font-semibold text-white mb-1">Describe your idea</h3>
-                <p className="text-blue-200/80 text-sm">Use the chat panel on the left to tell the AI what you want to build</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4 mb-6">
-              <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold">
-                2
-              </div>
-              <div>
-                <h3 className="font-semibold text-white mb-1">Watch it build</h3>
-                <p className="text-blue-200/80 text-sm">Your app will appear in this preview as the AI generates the code</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4">
-              <div className="flex-shrink-0 w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold">
-                3
-              </div>
-              <div>
-                <h3 className="font-semibold text-white mb-1">Refine and iterate</h3>
-                <p className="text-blue-200/80 text-sm">Continue the conversation to add features and make changes</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="text-center">
-            <p className="text-sm text-blue-300/60">
-              No coding required • Just describe what you want
-            </p>
-          </div>
+        <div className="grid lg:grid-cols-2 gap-6">
+          <ContextManager
+            t={t}
+            apiBase={apiBase}
+            currentLang={lang}
+            onSelect={setSelectedContext}
+          />
+          <NotesManager
+            t={t}
+            apiBase={apiBase}
+            currentLang={lang}
+            context={selectedContext}
+          />
         </div>
+
+        <LearningModes t={t} />
       </div>
     </div>
   )
