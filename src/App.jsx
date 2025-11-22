@@ -175,11 +175,17 @@ function App() {
   const [selectedContext, setSelectedContext] = useState(null)
   const [contexts, setContexts] = useState([])
   const [notes, setNotes] = useState([])
-  const [ui, setUi] = useState({ compact: false, bgStyle: 'gradient' })
+  const [ui, setUi] = useState({ compact: false, bgStyle: 'gradient', layout: 'free', size: 'md' })
+  const [openPanel, setOpenPanel] = useState('contexts')
 
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem('uiSettings') || '{}')
-    setUi({ compact: !!saved.compact, bgStyle: saved.bgStyle || 'gradient' })
+    setUi({
+      compact: !!saved.compact,
+      bgStyle: saved.bgStyle || 'gradient',
+      layout: saved.layout || 'free',
+      size: saved.size || 'md'
+    })
   }, [])
 
   useEffect(() => {
@@ -205,50 +211,154 @@ function App() {
     setLang(l)
   }
 
-  const bg = ui.bgStyle === 'mesh'
-    ? (
-      <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
-        <div className="absolute inset-0 opacity-30" style={{
-          backgroundImage: 'radial-gradient(20rem 20rem at 20% 10%, rgba(59,130,246,.35), transparent), radial-gradient(18rem 18rem at 80% 30%, rgba(16,185,129,.25), transparent), radial-gradient(14rem 14rem at 60% 80%, rgba(244,63,94,.25), transparent)'
-        }} />
-      </div>
-    ) : (
+  const sizeClass = ui.size === 'sm' ? 'text-[13px]' : ui.size === 'lg' ? 'text-[17px]' : 'text-[15px]'
+
+  const bg = (() => {
+    if (ui.bgStyle === 'mesh') {
+      return (
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
+          <div className="absolute inset-0 opacity-30" style={{
+            backgroundImage: 'radial-gradient(20rem 20rem at 20% 10%, rgba(59,130,246,.35), transparent), radial-gradient(18rem 18rem at 80% 30%, rgba(16,185,129,.25), transparent), radial-gradient(14rem 14rem at 60% 80%, rgba(244,63,94,.25), transparent)'
+          }} />
+        </div>
+      )
+    }
+    if (ui.bgStyle === 'aurora') {
+      return (
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-slate-950" />
+          <div className="absolute inset-0 mix-blend-screen opacity-70" style={{
+            backgroundImage: 'conic-gradient(from 90deg at 20% 10%, rgba(99,102,241,0.25), transparent 30%), conic-gradient(from 180deg at 80% 20%, rgba(16,185,129,0.25), transparent 40%), radial-gradient(40rem 30rem at 50% 120%, rgba(59,130,246,0.2), transparent)'
+          }} />
+        </div>
+      )
+    }
+    if (ui.bgStyle === 'photo1' || ui.bgStyle === 'photo2') {
+      const overlay = ui.bgStyle === 'photo1'
+        ? 'linear-gradient(rgba(2,6,23,.75), rgba(2,6,23,.85))'
+        : 'linear-gradient(rgba(2,6,23,.75), rgba(2,6,23,.9))'
+      const img = ui.bgStyle === 'photo1'
+        ? 'url(https://images.unsplash.com/photo-1482192596544-9eb780fc7f66?q=80&w=1600&auto=format&fit=crop)'
+        : 'url(https://images.unsplash.com/photo-1507842217343-583bb7270b66?q=80&w=1600&auto=format&fit=crop)'
+      return (
+        <div className="absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `${overlay}, ${img}` }} />
+      )
+    }
+    // default gradient
+    return (
       <div className="absolute inset-0">
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,rgba(59,130,246,0.15),transparent_60%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(99,102,241,0.12),transparent_60%)]" />
       </div>
     )
+  })()
+
+  const Accordion = ({ children }) => (
+    <div className="space-y-3">
+      {children}
+    </div>
+  )
+
+  const Panel = ({ id, title, children }) => {
+    const isOpen = openPanel === id
+    return (
+      <div className="rounded-2xl border border-slate-700/70 bg-slate-800/50 overflow-hidden">
+        <button
+          onClick={() => setOpenPanel(isOpen ? '' : id)}
+          className="w-full text-left px-4 py-3 bg-slate-900/60 hover:bg-slate-900/70 transition text-white font-medium"
+          aria-expanded={isOpen}
+        >
+          {title}
+        </button>
+        <div
+          className={`transition-[grid-template-rows] duration-300 grid ${isOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr]'}`}
+        >
+          <div className="min-h-0 overflow-auto">
+            <div className="p-4">
+              {children}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const content = (
+    <div className={`relative max-w-6xl mx-auto px-4 sm:px-6 ${ui.compact ? 'py-5 space-y-4' : 'py-8 space-y-6'} ${sizeClass}`}>
+      <Header t={t} currentLang={lang} onChangeLang={onChangeLang} languages={languages} />
+
+      {ui.layout === 'accordion' ? (
+        <Accordion>
+          <Panel id="settings" title="Customize">
+            <SettingsPanel onChange={(s) => setUi(s)} />
+          </Panel>
+          <Panel id="contexts" title={t('contexts')}>
+            <ContextManager
+              t={t}
+              apiBase={apiBase}
+              currentLang={lang}
+              onSelect={setSelectedContext}
+              onList={(items) => setContexts(items)}
+            />
+          </Panel>
+          <Panel id="notes" title={t('notes')}>
+            <NotesManager
+              t={t}
+              apiBase={apiBase}
+              currentLang={lang}
+              context={selectedContext}
+              onList={(items) => setNotes(items)}
+            />
+          </Panel>
+          <Panel id="map" title="Overview">
+            <MapOverview contexts={contexts} notes={notes} currentContext={selectedContext} />
+          </Panel>
+          <Panel id="modes" title={t('learningModes')}>
+            <LearningModes t={t} />
+          </Panel>
+        </Accordion>
+      ) : (
+        <>
+          <SettingsPanel onChange={(s) => setUi(s)} />
+
+          <div className={`grid lg:grid-cols-2 gap-6`}>
+            <ContextManager
+              t={t}
+              apiBase={apiBase}
+              currentLang={lang}
+              onSelect={setSelectedContext}
+              onList={(items) => setContexts(items)}
+            />
+            <NotesManager
+              t={t}
+              apiBase={apiBase}
+              currentLang={lang}
+              context={selectedContext}
+              onList={(items) => setNotes(items)}
+            />
+          </div>
+
+          <MapOverview contexts={contexts} notes={notes} currentContext={selectedContext} />
+
+          <LearningModes t={t} />
+        </>
+      )}
+    </div>
+  )
 
   return (
-    <div className="min-h-screen relative">
+    <div className="h-screen min-h-0 relative">
       {bg}
-      <div className={`relative max-w-6xl mx-auto px-4 sm:px-6 ${ui.compact ? 'py-5 space-y-4' : 'py-8 space-y-6'}`}>
-        <Header t={t} currentLang={lang} onChangeLang={onChangeLang} languages={languages} />
-
-        <SettingsPanel onChange={(s) => setUi(s)} />
-
-        <div className={`grid lg:grid-cols-2 gap-6`}>
-          <ContextManager
-            t={t}
-            apiBase={apiBase}
-            currentLang={lang}
-            onSelect={setSelectedContext}
-            onList={(items) => setContexts(items)}
-          />
-          <NotesManager
-            t={t}
-            apiBase={apiBase}
-            currentLang={lang}
-            context={selectedContext}
-            onList={(items) => setNotes(items)}
-          />
-        </div>
-
-        <MapOverview contexts={contexts} notes={notes} currentContext={selectedContext} />
-
-        <LearningModes t={t} />
+      <div className={`absolute inset-0 overflow-hidden`}>
+        {ui.layout === 'accordion' ? (
+          <div className="absolute inset-0 flex flex-col">
+            <div className="flex-1 min-h-0 overflow-auto pb-4">{content}</div>
+          </div>
+        ) : (
+          <div className="absolute inset-0 overflow-auto">{content}</div>
+        )}
       </div>
     </div>
   )
